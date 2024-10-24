@@ -8,9 +8,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from openai import OpenAI
 
-from config.path import *
+from config.config import *
 from config.prompt_list import *
-from util.rag import create_vector_database, load_retriever
+from util.rag import load_retriever
 from util.rouge import top_similar_text
 
 client = OpenAI(
@@ -57,7 +57,7 @@ def convert_seconds(seconds):
 
 
 def chat_completion(messages, model="google/gemma-2-27b-it"):
-    model = "Qwen/Qwen2.5-72B-Instruct"
+    # model = "Qwen/Qwen2.5-72B-Instruct"
     completion = client.chat.completions.create(
         model=model,
         messages=messages
@@ -100,7 +100,7 @@ def check_json_structure(json_data):
         return False
 
     for idx, causality in enumerate(json_data["causality_list"]):
-        for role in ["cause", "effect"]:
+        for role in event_roles:
             event = causality.get(role, {})
 
             if event['class'] not in event_classes:
@@ -120,21 +120,21 @@ def check_json_structure(json_data):
     return True
 
 
-def rearrange():
-    with (
-        open(test_file, 'r', encoding='utf-8') as f_test,
-        open(pred_file, 'r', encoding='utf-8') as f_pred
-    ):
-        test_data, pred_data = json.load(f_test), json.load(f_pred)
+def rearrange(test_data, result_data, start_point, end_point, rename=True):
+    pred_data = {str(pred['document_id']): pred for pred in result_data}
 
-    msg_tmp, result_tmp = [], []
-    for i, doc in enumerate(test_data):
-        for data in pred_data:
-            if doc['document_id'] == data['document_id']:
-                msg_tmp.append(data)
-                break
-    with open("test_qwen.json", 'w', encoding='utf-8') as f:
-        json.dump(msg_tmp, f, ensure_ascii=False, indent=4)
+    result = []
+    while start_point < end_point:
+        data = pred_data[str(test_data[start_point].get('document_id', None))]
+        if data:
+            if rename:
+                tmp_data = json.dumps(data, ensure_ascii=False, indent=4)  # transfer into string for replacement
+                tmp_data = tmp_data.replace("cause_event", "cause").replace("effect_event", "effect")
+                data = json.loads(tmp_data)
+            result.append(data)
+        start_point += 1
+
+    return result
 
 
 def process_document(doc, causality_data, retriever, rouge, rag, prompts):
@@ -235,6 +235,8 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10)
                               f"Elapsed Time: {convert_seconds(total_time)}, {total_time/finished:.2f}s/it   ")
                 progress_bar(len(msg_data), n, extra_info=extra_info)
     finally:
+        msg_data = rearrange(test_data, msg_data, start_point, len(test_data) if end_point == 0 else end_point, False)
+        result_data = rearrange(test_data, result_data, start_point, len(test_data) if end_point == 0 else end_point)
         with (
             open(analysis_file, 'w', encoding='utf-8') as f_analysis,
             open(pred_file, 'w', encoding='utf-8') as f_pred
@@ -244,4 +246,4 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10)
 
 
 if __name__ == '__main__':
-    rearrange()
+    generate(start_point=0, end_point=10, rouge=True)
