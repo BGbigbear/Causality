@@ -103,10 +103,6 @@ def check_json_structure(json_data):
         for role in event_roles:
             event = causality.get(role, {})
 
-            if event['class'] not in event_classes:
-                print(f"Document {json_data.get('document_id', 'Unknown')}, Event {idx}, '{role}' type error: {event['class']}.")
-                return False
-
             missing_keys = required_keys - event.keys()
             extra_keys = event.keys() - required_keys
 
@@ -115,6 +111,9 @@ def check_json_structure(json_data):
                 return False
             if extra_keys:
                 print(f"Document {json_data.get('document_id', 'Unknown')}, Event {idx}, '{role}' has extra keys: {extra_keys}.")
+                return False
+            if event['class'] not in event_classes:
+                print(f"Document {json_data.get('document_id', 'Unknown')}, Event {idx}, '{role}' type error: {event['class']}.")
                 return False
 
     return True
@@ -125,7 +124,7 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
 
     result = []
     while start_point < end_point:
-        data = pred_data[str(test_data[start_point].get('document_id', None))]
+        data = pred_data.get(str(test_data[start_point]['document_id']), None)
         if data:
             if rename:
                 tmp_data = json.dumps(data, ensure_ascii=False, indent=4)  # transfer into string for replacement
