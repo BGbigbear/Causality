@@ -6,17 +6,10 @@ import time
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from openai import OpenAI
-
-from config.config import *
-from config.prompt_list import *
-from util.rag import load_retriever
+from config.configuration import *
+from inference.inference_tools import chat_completion, load_model, model_generation
+# from util.rag import load_retriever
 from util.rouge import top_similar_text
-
-client = OpenAI(
-    api_key="4GT75Atw94Q4j044iBAT1AK85NreqXJU",
-    base_url="https://api.deepinfra.com/v1/openai",
-)
 
 logging.disable(logging.WARNING)
 logging.basicConfig(
@@ -56,16 +49,14 @@ def convert_seconds(seconds):
         return f"{hours:.0f} h {minutes:.0f} m {remaining_seconds:.0f} s"
 
 
-def chat_completion(messages, model="google/gemma-2-27b-it"):
-    # model = "Qwen/Qwen2.5-72B-Instruct"
-    completion = client.chat.completions.create(
-        model=model,
-        messages=messages
-    )
-    return completion
+def chat(text, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, model=None, using_api=False):
+    def append_messages():
+        if not using_api:
+            messages.append({"role": "assistant", "content": model_generation(tokenizer, model, messages)})
+        else:
+            completion = chat_completion(messages)
+            messages.append({"role": "assistant", "content": str(completion.choices[0].message.content)})
 
-
-def chat(text, few_shot=None, prompts=causality_prompts_v0):
     # q1 = f"文本：{text}" + f"\n参考：\n{few_shot}" if few_shot else f"文本：{text}"
     # q1 += f"\n({prompts[1]})"
     #
@@ -77,14 +68,13 @@ def chat(text, few_shot=None, prompts=causality_prompts_v0):
     messages = [
         {"role": "user", "content": f"{few_shot}\n\n{prompts}\n\n\"text\": {text}"}
     ]
-    completion = chat_completion(messages)
-    messages.append({"role": "assistant", "content": str(completion.choices[0].message.content)})
+    append_messages()
 
     for i in range(1, len(prompts)):
         if i > 1:
             messages.append({"role": "user", "content": prompts[i]})
-        completion = chat_completion(messages)
-        messages.append({"role": "assistant", "content": str(completion.choices[0].message.content)})
+
+        append_messages()
 
     return messages
 
@@ -124,19 +114,22 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
 
     result = []
     while start_point < end_point:
-        data = pred_data.get(str(test_data[start_point]['document_id']), None)
+        doc_id = test_data[start_point]['document_id']
+        data = pred_data.get(str(doc_id), None)
         if data:
             if rename:
                 tmp_data = json.dumps(data, ensure_ascii=False, indent=4)  # transfer into string for replacement
                 tmp_data = tmp_data.replace("cause_event", "cause").replace("effect_event", "effect")
                 data = json.loads(tmp_data)
             result.append(data)
+        else:
+            print(f"Missing document, id: {doc_id}")
         start_point += 1
 
     return result
 
 
-def process_document(doc, causality_data, retriever, rouge, rag, prompts):
+def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_api):
     few_shot = ""
     if rouge:
         shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data)}
@@ -151,7 +144,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts):
             shots.append(shot)
         few_shot += json.dumps(shots, ensure_ascii=False, indent=2)
 
-    msgs = chat(doc['text'], few_shot, prompts)  # generate
+    msgs = chat(doc['text'], few_shot, prompts, using_api=using_api)  # generate
     content = msgs[-1]['content']
 
     max_retries, retries, circle_flag = 5, 0, False
@@ -159,7 +152,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts):
         if circle_flag:
             # completion = chat_completion(msgs[:-1])
             # content = str(completion.choices[0].message.content)
-            content = chat(doc['text'], few_shot, prompts)[-1]['content']
+            content = chat(doc['text'], few_shot, prompts, using_api=using_api)[-1]['content']
         try:
             result = json.loads(content[content.find('{'): content.rfind(']') + 1] + "\n}")
             if not check_json_structure(result):
@@ -180,7 +173,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts):
     logging.error(f"Failed to process document {doc['document_id']} after {max_retries} attempts.")
 
 
-def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10):
+def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10, using_api=False):
     with open(test_file, 'r', encoding='utf-8') as f_test:
         test_data = json.load(f_test)
 
@@ -190,7 +183,8 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10)
         with open(causality_file, 'r', encoding='utf-8') as f_causality:
             causality_data = json.load(f_causality)
         if rag:
-            retriever = load_retriever(causality_data, db_path)
+            # retriever = load_retriever(causality_data, db_path)
+            pass
 
     start_time = time.time()
     n = len(test_data) if start_point == end_point == 0 \
@@ -218,7 +212,7 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10)
 
                 future = executor.submit(
                     process_document,
-                    doc, causality_data, retriever, rouge, rag, causality_prompts_3shots
+                    doc, causality_data, retriever, rouge, rag, global_prompts, using_api
                 )
                 future_to_doc[future] = doc
 
@@ -228,12 +222,14 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10)
                     msg_data.append(res['msg_data'])
                     result_data.append(res['result_data'])
 
-                finished = len(msg_data)
+                finished = max(len(msg_data), 1)
                 total_time = time.time() - start_time
                 extra_info = (f"Task {finished}/{n} | "
                               f"Elapsed Time: {convert_seconds(total_time)}, {total_time/finished:.2f}s/it   ")
                 progress_bar(len(msg_data), n, extra_info=extra_info)
+        print("\nInference finished")
     finally:
+        print("Start writing files")
         msg_data = rearrange(test_data, msg_data, start_point, len(test_data) if end_point == 0 else end_point, False)
         result_data = rearrange(test_data, result_data, start_point, len(test_data) if end_point == 0 else end_point)
         with (

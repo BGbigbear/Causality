@@ -1,8 +1,8 @@
-from inference.api_inference import generate
+from inference.fast_inference import generate
 
 
 def run():
-    generate(start_point=0, end_point=1, rouge=True)
+    generate(start_point=0, end_point=1, rouge=True, using_api=True)
 
 
 if __name__ == '__main__':

@@ -5,7 +5,6 @@ from BCEmbedding.tools.langchain import BCERerank
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain.retrievers import ContextualCompressionRetriever
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def create_vector_database(causality_data, vector_data_path):
