@@ -1,9 +1,4 @@
-"""
-输入：
 
-输出
-"""
-#from memory_profiler import profile
 import multiprocessing as mp
 import difflib
 import itertools
@@ -222,8 +217,8 @@ def re_F1(results):
         max_sum_time+= sum_time
         max_sum_location+= sum_location
         max_sum_object += sum_object
-    print('预测正确', sum_numerator, '预测量', sum_Pdeno, '标答量', sum_Rdeno, 'action', sum_action, 'object',
-              sum_object,'actor',sum_actor,'class',sum_class,'time',sum_time,'location',sum_location)
+    print('预测正确', max_sum_numerator, '预测量', max_sum_Pdeno, '标答量', max_sum_Rdeno, 'action', max_sum_action, 'object',
+              max_sum_object,'actor',max_sum_actor,'class',max_sum_class,'time',max_sum_time,'location',max_sum_location)
     actor = round(max_sum_actor/max_sum_numerator,6)
     classs = round(max_sum_class/max_sum_numerator,6)
     action = round(max_sum_action/max_sum_numerator,6)
