@@ -1,0 +1,130 @@
+def generate(file, start_point=0, end_point=0):
+    with open(file, 'r', encoding='utf-8') as f:
+        test_data = json.load(f)
+
+    start_time = time.time()
+    n = len(test_data)
+    msg_data, result_data = [], []
+
+    if start_point != 0:
+        with (
+            open('result/causality_analysis.json', 'r', encoding='utf-8') as analysis,
+            open('result/causality_predict.json', 'r', encoding='utf-8') as predict
+        ):
+            msg_data, result_data = json.load(analysis), json.load(predict)
+            analysis.close()
+            predict.close()
+
+    progress_bar(0, n)
+
+    try:
+        for i, doc in enumerate(test_data):
+            if start_point != 0 and i < start_point:
+                progress_bar(i + 1, n)
+                continue
+            if end_point != 0 and i == end_point:
+                break
+
+            msgs = chat(doc['text'])
+            content = msgs[-1]['content']
+            # result = json.loads(msgs[-1]['content'].replace('```json\n', '').replace('\n```', ''))
+            result = json.loads(content[content.find('{'): content.rfind('}')+1])
+
+            msg_data.append({"document_id": doc['document_id'], "text": doc['text'], "analysis": msgs})
+            result_data.append({"document_id": doc['document_id'], "text": doc['text'], **result})
+
+            extra_info = f"Task {i + 1}/{n} | Elapsed Time: {time.time() - start_time:.2f}s"
+            progress_bar(i + 1, n, extra_info=extra_info)
+    except Exception as e:
+        print(content)  # debug
+    finally:
+        with (
+            open('result/causality_analysis.json', 'w', encoding='utf-8') as analysis,
+            open('result/causality_predict.json', 'w', encoding='utf-8') as predict
+        ):
+            json.dump(msg_data, analysis, ensure_ascii=False, indent=4)
+            json.dump(result_data, predict, ensure_ascii=False, indent=4)
+
+
+def generate(raw_file, analysis_file, start_point=0, end_point=0):
+    with open(raw_file, 'r', encoding='utf-8') as f_raw:
+        test_data = json.load(f_raw)
+
+    start_time = time.time()
+    n = len(test_data)
+    msg_data, result_data = [], []
+
+    if start_point != 0:
+        with open(analysis_file, 'r', encoding='utf-8') as f_analysis:
+            msg_data = json.load(f_analysis)
+
+    progress_bar(0, n)
+
+    try:
+        for i, doc in enumerate(test_data):
+            if start_point != 0 and i < start_point:
+                progress_bar(i + 1, n)
+                continue
+            if end_point != 0 and i == end_point:
+                break
+
+            msgs = chat(doc['text'])
+
+            msg_data.append({"document_id": doc['document_id'], "text": doc['text'], "analysis": msgs})
+
+            extra_info = f"Task {i + 1}/{n} | Elapsed Time: {convert_seconds(time.time() - start_time)}"
+            progress_bar(i + 1, n, extra_info=extra_info)
+    finally:
+        with open(analysis_file, 'w', encoding='utf-8') as f_analysis:
+            json.dump(msg_data, f_analysis, ensure_ascii=False, indent=4)
+
+
+def generate_output(analysis_file, pred_file):
+    with (
+        open(analysis_file, 'r', encoding='utf-8') as f_analysis,
+        open(pred_file, 'w', encoding='utf-8') as f_pred
+    ):
+        msg_data, result_data = json.load(f_analysis), []
+        for msg in msg_data:
+            content = msg['analysis'][-1]['content']
+            # result = json.loads(msgs[-1]['content'].replace('```json\n', '').replace('\n```', ''))
+            # result = json.loads(msgs[-1]['content'].replace('```', '').strip()
+            try:
+                result = json.loads(content[content.find('{'): content.rfind(']') + 1] + "\n}")
+                result_data.append({"document_id": msg['document_id'], "text": msg['text'], **result})
+            except ValueError as e:
+                print(msg['document_id'])
+                print(str(e))
+
+        json.dump(result_data, f_pred, ensure_ascii=False, indent=4)
+
+
+def check_json_structure(file_path):
+    required_keys = {
+        "actor", "class", "action", "time", "location", "object"
+    }
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    issues = []  # 用于存储检查中发现的问题
+
+    for doc in data:
+        if "causality_list" not in doc:
+            issues.append(f"Document {doc.get('document_id', 'Unknown')} is missing 'causality_list'.")
+            continue
+
+        for idx, causality in enumerate(doc["causality_list"]):
+            for role in ["cause", "effect"]:
+                event = causality.get(role, {})
+                missing_keys = required_keys - event.keys()
+                extra_keys = event.keys() - required_keys
+
+                if missing_keys:
+                    issues.append(
+                        f"Document {doc.get('document_id', 'Unknown')}, Event {idx}, '{role}' is missing keys: {missing_keys}.")
+                if extra_keys:
+                    issues.append(
+                        f"Document {doc.get('document_id', 'Unknown')}, Event {idx}, '{role}' has extra keys: {extra_keys}.")
+
+    return issues
