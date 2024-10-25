@@ -54,8 +54,7 @@ def chat(text, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, mode
         if not using_api:
             messages.append({"role": "assistant", "content": model_generation(tokenizer, model, messages)})
         else:
-            completion = chat_completion(messages)
-            messages.append({"role": "assistant", "content": str(completion.choices[0].message.content)})
+            messages.append({"role": "assistant", "content": chat_completion(messages)})
 
     # q1 = f"文本：{text}" + f"\n参考：\n{few_shot}" if few_shot else f"文本：{text}"
     # q1 += f"\n({prompts[1]})"
@@ -66,7 +65,7 @@ def chat(text, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, mode
     # ]
 
     messages = [
-        {"role": "user", "content": f"{few_shot}\n\n{prompts}\n\n\"text\": {text}"}
+        {"role": "user", "content": f"{few_shot}\n\n{prompts[0]}\n\n\"text\": {text}"}
     ]
     append_messages()
 
@@ -129,7 +128,7 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
     return result
 
 
-def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_api):
+def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_api, tokenizer, model):
     few_shot = ""
     if rouge:
         shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data)}
@@ -144,7 +143,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
             shots.append(shot)
         few_shot += json.dumps(shots, ensure_ascii=False, indent=2)
 
-    msgs = chat(doc['text'], few_shot, prompts, using_api=using_api)  # generate
+    msgs = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)  # generate
     content = msgs[-1]['content']
 
     max_retries, retries, circle_flag = 5, 0, False
@@ -152,7 +151,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
         if circle_flag:
             # completion = chat_completion(msgs[:-1])
             # content = str(completion.choices[0].message.content)
-            content = chat(doc['text'], few_shot, prompts, using_api=using_api)[-1]['content']
+            content = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)[-1]['content']
         try:
             result = json.loads(content[content.find('{'): content.rfind(']') + 1] + "\n}")
             if not check_json_structure(result):
@@ -174,6 +173,10 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
 
 
 def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10, using_api=False):
+    tokenizer, model = None, None
+    if not using_api:
+        tokenizer, model = load_model(model_path)
+
     with open(test_file, 'r', encoding='utf-8') as f_test:
         test_data = json.load(f_test)
 
@@ -212,7 +215,7 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
 
                 future = executor.submit(
                     process_document,
-                    doc, causality_data, retriever, rouge, rag, global_prompts, using_api
+                    doc, causality_data, retriever, rouge, rag, global_prompts, using_api, tokenizer, model
                 )
                 future_to_doc[future] = doc
 
