@@ -131,7 +131,7 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
 def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_api, tokenizer, model):
     few_shot = ""
     if rouge:
-        shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data)}
+        shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data, top_k=3)}
         few_shot += json.dumps(shots, ensure_ascii=False, indent=2)
     elif rag:
         vector_search_results = retriever.invoke(f"{doc['text']}")
@@ -153,7 +153,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
             # content = str(completion.choices[0].message.content)
             content = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)[-1]['content']
         try:
-            result = json.loads(content[content.find('{'): content.rfind(']') + 1] + "\n}")
+            result = json.loads(content[content.find('{'): content.rfind(']') + 1].replace("\\\"{causality_list", "{\\\"causality_list") + "\n}")
             if not check_json_structure(result):
                 logging.error(f"JSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: "
                               f"Json structure error.")

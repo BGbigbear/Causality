@@ -22,6 +22,8 @@ def top_similar_text(text, causality_data, top_k=5, n=2):
     pass
     outputs = []
     for i, doc in enumerate(causality_data):
+        if doc['text'] == text:  # skip same text
+            continue
         score = ngram_rouge(doc['text'], text, n)
         if len(outputs) < top_k:
             heapq.heappush(outputs, (score, i))

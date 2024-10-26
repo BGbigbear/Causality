@@ -4,23 +4,9 @@ from collections import defaultdict
 from typing_extensions import Counter
 from tqdm import tqdm  # 引入tqdm库
 
-open_filename="../data/Alpaca/train1_updated_cause_event.json"
-# 定义计算 n-gram 重叠的 Rouge-n 函数
-def ngram_rouge(candidate, reference, n):
-    candidate_ngrams = [candidate[i:i + n] for i in range(len(candidate) - n + 1)]
-    reference_ngrams = [reference[i:i + n] for i in range(len(reference) - n + 1)]
+from util.rouge import ngram_rouge
 
-    candidate_counts = Counter(candidate_ngrams)
-    reference_counts = Counter(reference_ngrams)
-
-    overlap = sum((candidate_counts & reference_counts).values())
-    total_ngrams = sum(reference_counts.values())
-
-    if total_ngrams == 0:
-        return 0.0
-
-    return overlap / total_ngrams
-
+open_filename = "../data/Alpaca/train1_updated_cause_event.json"
 
 # 从文件中加载数据
 with open(open_filename, "r", encoding="utf-8") as f:
