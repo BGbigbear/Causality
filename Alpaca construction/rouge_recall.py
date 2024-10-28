@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing_extensions import Counter
 from tqdm import tqdm  # 引入tqdm库
 
-open_filename="../data/Alpaca/train1_updated_cause_event.json"
+open_filename="../data/reconstruction/merge1_1.json"
 # 定义计算 n-gram 重叠的 Rouge-n 函数
 def ngram_rouge(candidate, reference, n):
     candidate_ngrams = [candidate[i:i + n] for i in range(len(candidate) - n + 1)]
