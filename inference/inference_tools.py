@@ -16,7 +16,7 @@ def chat_completion(messages, model="google/gemma-2-27b-it"):
     completion = client.chat.completions.create(
         model=model,
         messages=messages,
-        temperature=1.3  # defaults to 1
+        temperature=1.0  # defaults to 1
     )
     return str(completion.choices[0].message.content)
 

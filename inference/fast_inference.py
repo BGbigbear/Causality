@@ -206,7 +206,7 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
             open(pred_file, 'r', encoding='utf-8') as f_pred
         ):
             msg_data, result_data = json.load(f_analysis), json.load(f_pred)
-            n += start_point
+            n += start_point if not recheck else 0  # recheck or resume
 
     progress_bar(0, n, extra_info="Initializing...")
 
