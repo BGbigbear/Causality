@@ -15,7 +15,8 @@ def chat_completion(messages, model="google/gemma-2-27b-it"):
     # model = "Qwen/Qwen2.5-72B-Instruct"
     completion = client.chat.completions.create(
         model=model,
-        messages=messages
+        messages=messages,
+        temperature=1.0  # defaults to 1
     )
     return str(completion.choices[0].message.content)
 

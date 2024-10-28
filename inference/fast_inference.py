@@ -85,25 +85,29 @@ def check_json_structure(json_data):
     event_classes = ["经济事件", "科技发展", "军事行动", "安全事件", "航空航天活动", "装备与军备", "社会事件", "外交活动", "政治事件"]
 
     if "causality_list" not in json_data:
-        print(f"Document {json_data.get('document_id', 'Unknown')} is missing 'causality_list'.")
+        print(f"\nDocument is missing 'causality_list'.")
         return False
 
     for idx, causality in enumerate(json_data["causality_list"]):
         for role in event_roles:
+            if not isinstance(causality, dict):
+                print(f"\nEvent {idx}, '{role}' is not dict")
+                return False
+
             event = causality.get(role, {})
 
             missing_keys = required_keys - event.keys()
             extra_keys = event.keys() - required_keys
 
             if missing_keys:
-                print(f"Document {json_data.get('document_id', 'Unknown')}, Event {idx}, '{role}' is missing keys: {missing_keys}.")
+                print(f"\nEvent {idx}, '{role}' is missing keys: {missing_keys}.")
                 return False
             if extra_keys:
-                print(f"Document {json_data.get('document_id', 'Unknown')}, Event {idx}, '{role}' has extra keys: {extra_keys}.")
+                print(f"\nEvent {idx}, '{role}' has extra keys: {extra_keys}.")
                 return False
-            if event['class'] not in event_classes:
-                print(f"Document {json_data.get('document_id', 'Unknown')}, Event {idx}, '{role}' type error: {event['class']}.")
-                return False
+            # if event['class'] not in event_classes:
+            #     print(f"\nEvent {idx}, '{role}' type error: {event['class']}.")
+            #     return False
 
     return True
 
@@ -112,8 +116,9 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
     pred_data = {str(pred['document_id']): pred for pred in result_data}
 
     result = []
-    while start_point < end_point:
-        doc_id = test_data[start_point]['document_id']
+    idx = 0
+    while idx < end_point:
+        doc_id = test_data[idx]['document_id']
         data = pred_data.get(str(doc_id), None)
         if data:
             if rename:
@@ -121,9 +126,9 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
                 tmp_data = tmp_data.replace("cause_event", "cause").replace("effect_event", "effect")
                 data = json.loads(tmp_data)
             result.append(data)
-        else:
+        elif idx >= start_point:
             print(f"Missing document, id: {doc_id}")
-        start_point += 1
+        idx += 1
 
     return result
 
@@ -131,7 +136,7 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
 def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_api, tokenizer, model):
     few_shot = ""
     if rouge:
-        shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data)}
+        shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data, top_k=3)}
         few_shot += json.dumps(shots, ensure_ascii=False, indent=2)
     elif rag:
         vector_search_results = retriever.invoke(f"{doc['text']}")
@@ -151,11 +156,12 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
         if circle_flag:
             # completion = chat_completion(msgs[:-1])
             # content = str(completion.choices[0].message.content)
-            content = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)[-1]['content']
+            msgs = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)
+            content = msgs[-1]['content']
         try:
             result = json.loads(content[content.find('{'): content.rfind(']') + 1] + "\n}")
             if not check_json_structure(result):
-                logging.error(f"JSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: "
+                logging.error(f"\nJSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: "
                               f"Json structure error.")
                 circle_flag = True
                 retries += 1
@@ -165,14 +171,14 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
                 'result_data': {"document_id": doc['document_id'], "text": doc['text'], **result}
             }
         except ValueError as e:
-            logging.error(f"JSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: {e}")
+            logging.error(f"\nJSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: {e}")
             circle_flag = True
             retries += 1
 
     logging.error(f"Failed to process document {doc['document_id']} after {max_retries} attempts.")
 
 
-def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10, using_api=False):
+def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10, using_api=False, recheck=False):
     tokenizer, model = None, None
     if not using_api:
         tokenizer, model = load_model(model_path)
@@ -194,15 +200,23 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
         else (len(test_data) - start_point if end_point == 0 else end_point - start_point)  # total task number
     msg_data, result_data = [], []
 
-    if start_point != 0 and os.path.exists(analysis_file) and os.path.exists(pred_file):
+    if recheck or (start_point != 0 and os.path.exists(analysis_file) and os.path.exists(pred_file)):
         with (
             open(analysis_file, 'r', encoding='utf-8') as f_analysis,
             open(pred_file, 'r', encoding='utf-8') as f_pred
         ):
             msg_data, result_data = json.load(f_analysis), json.load(f_pred)
+            n += start_point if not recheck else 0  # recheck or resume
 
     progress_bar(0, n, extra_info="Initializing...")
 
+    init_finished = len(msg_data)
+    miss_set = None
+    if recheck:
+        doc_set = {test['document_id'] for test in test_data}
+        cur_set = {result['document_id'] for result in result_data}
+        miss_set = doc_set - cur_set
+        print(f"\nMissing document set: {miss_set}")
     try:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_doc = {}
@@ -212,6 +226,8 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
                     continue
                 if end_point != 0 and i >= end_point:
                     break
+                if recheck and doc['document_id'] not in miss_set:
+                    continue
 
                 future = executor.submit(
                     process_document,
@@ -225,11 +241,12 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
                     msg_data.append(res['msg_data'])
                     result_data.append(res['result_data'])
 
-                finished = max(len(msg_data), 1)
+                total = len(msg_data)
+                finished = max(total - init_finished, 1)
                 total_time = time.time() - start_time
-                extra_info = (f"Task {finished}/{n} | "
+                extra_info = (f"Task {total}/{n} | "
                               f"Elapsed Time: {convert_seconds(total_time)}, {total_time/finished:.2f}s/it   ")
-                progress_bar(len(msg_data), n, extra_info=extra_info)
+                progress_bar(total, n, extra_info=extra_info)
         print("\nInference finished")
     finally:
         print("Start writing files")
