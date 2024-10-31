@@ -122,7 +122,7 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
         data = pred_data.get(str(doc_id), None)
         if data:
             if rename:
-                tmp_data = json.dumps(data, ensure_ascii=False, indent=4)  # transfer into string for replacement
+                tmp_data = json.dumps(data, ensure_ascii=False)  # transfer into string for replacement
                 tmp_data = tmp_data.replace("cause_event", "cause").replace("effect_event", "effect")
                 data = json.loads(tmp_data)
             result.append(data)
@@ -137,7 +137,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
     few_shot = ""
     if rouge:
         shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data, top_k=3)}
-        few_shot += json.dumps(shots, ensure_ascii=False, indent=2)
+        few_shot += json.dumps(shots, ensure_ascii=False)
     elif rag:
         vector_search_results = retriever.invoke(f"{doc['text']}")
         shots = []
@@ -146,7 +146,7 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
             shot = {"text": causality_data[int(content[0])]['text'],
                     "causality_list": causality_data[int(content[0])]['causality_list']}
             shots.append(shot)
-        few_shot += json.dumps(shots, ensure_ascii=False, indent=2)
+        few_shot += json.dumps(shots, ensure_ascii=False)
 
     msgs = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)  # generate
     content = msgs[-1]['content']

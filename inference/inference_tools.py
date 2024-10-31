@@ -12,11 +12,11 @@ client = OpenAI(
 
 
 def chat_completion(messages, model="google/gemma-2-27b-it"):
-    # model = "Qwen/Qwen2.5-72B-Instruct"
+    model = "Qwen/Qwen2.5-72B-Instruct"
     completion = client.chat.completions.create(
         model=model,
         messages=messages,
-        temperature=1.0  # defaults to 1
+        temperature=1.3  # defaults to 1
     )
     return str(completion.choices[0].message.content)
 
@@ -31,7 +31,10 @@ def request_api(messages, model="google/gemma-2-27b-it"):
         "messages": messages
     }
     response = requests.post(url + "/chat/completions", headers=headers, json=data)
-    return response.json()['choices'][0]['message']['content']
+    if len(response.json()['choices']) > 1:
+        return [choice['message']['content'] for choice in response.json()['choices']]
+    else:
+        return response.json()['choices'][0]['message']['content']
 
 
 def load_model(model_path):
@@ -59,5 +62,6 @@ if __name__ == '__main__':
     ]
     # tok, mod = load_model("gemma2")
     # print(model_generation(tok, mod, msgs))
-    print(chat_completion(msgs))
-    # print(request_api(msgs))
+    # print(chat_completion(msgs))
+
+    print(request_api(msgs))

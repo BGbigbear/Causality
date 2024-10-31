@@ -289,14 +289,29 @@ causality_prompts_v0 = [
     """
 ]
 
+json_fmt = """{"causality_list": [{"causality_type": "直接","cause_event": {"actor": ...,"class": ...,"action": ...,"time": ...,"location": ...,"object": ...},"effect_event": }"""
+json_cot_fmt = """{"causality_list": [{"causality_description": ...,"causality_type": "直接","cause_event": {"event_description": ...,"actor": ...,"class": ...,"action": ...,"time": ...,"location": ...,"object": ...},"effect_event": }"""
+
 causality_prompts_3shots = [
     """
 以上是一些事件抽取的示例，参考以上的事件抽取示例，对下面的这个文本进行因果关系事件抽取。
 注意：
-1.只需要抽取包含“直接”因果关系的事件。如果某一事件，它和其他的事件之间不构成直接因果关系，则不需要包括在结果中。每一组因果关系，必须包含一个cause_event和一个effect_event。
+1.抽取包含“直接”和“间接”因果关系的事件。每一组因果关系，必须包含一个cause_event和一个effect_event。
 2.对于每一个事件，需要给出它的{Actor, Class, Action, Object (optional), Time (optional), Location (optional)}等要素，且这些要素（除了class）需要抽取原文中的片段来表示。
 3.只需要提取这些类别：{'军事行动', '外交活动', '安全事件', '政治事件', '社会事件', '科技发展', '经济事件', '航空航天活动', '装备与军备'}的事件，其他类别的事件不要提取。
 4.只需要抽取关键事件，并以重要程度排序。不关键的事件不包括在结果中。对于如何判断什么是关键事件，可以参考所给出的示例。
-5.结果要以json的格式返回。
+5.结果要以json的格式返回。{"causality_list": [{"causality_type": "直接","cause_event": {"actor": ...,"class": ...,"action": ...,"time": ...,"location": ...,"object": ...},"effect_event": }
+    """
+]
+
+causality_prompts_3shots_cot = [
+    """
+以上是一些事件抽取的示例，参考以上的事件抽取示例，对下面的这个文本进行因果关系事件抽取。
+注意：
+1.抽取包含“直接”和“间接”因果关系的事件。每一组因果关系，必须包含causality_description，以及一个cause_event和一个effect_event。
+2.对于每一个事件，需要给出它的{Description, Actor, Class, Action, Object (optional), Time (optional), Location (optional)}等要素，且这些要素（除了class）需要抽取原文中的片段来表示。
+3.只需要提取这些类别：{'军事行动', '外交活动', '安全事件', '政治事件', '社会事件', '科技发展', '经济事件', '航空航天活动', '装备与军备'}的事件，其他类别的事件不要提取。
+4.只需要抽取关键事件，并以重要程度排序。不关键的事件不包括在结果中。对于如何判断什么是关键事件，可以参考所给出的示例。
+5.结果要以json的格式返回。{"causality_list": [{"causality_description": ...,"causality_type": "直接","cause_event": {"event_description": ...,"actor": ...,"class": ...,"action": ...,"time": ...,"location": ...,"object": ...},"effect_event": }
     """
 ]
