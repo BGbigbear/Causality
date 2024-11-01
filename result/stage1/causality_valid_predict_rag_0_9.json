@@ -1,0 +1,461 @@
+[
+    {
+        "document_id": 10471,
+        "text": "由于美国为维护霸权地位，持续采用冷战思维并制造假想敌，导致越来越多的国家开始反思大国竞争的意义，并逐渐摒弃零和博弈。这些国家认为，专注于自身的发展才是更合适的逻辑，因此他们在国际问题上开始更加积极发声，并拒绝被西方利益所束缚。例如，在乌克兰危机和巴以问题上，这些国家拒绝选边站队，选择站在符合历史和人类进步的一边。同时，这些发展中国家也积极参与金砖国家合作机制，力图在国际舞台上扩大自己的影响力。罗思义指出，除了少数如英国这样的国家可能为了美国的利益而牺牲本国利益外，大多数国家正在放弃为美国利益而牺牲自身利益的做法。因此，当前国际社会的主流趋势是追求和平与发展，并维持战略独立，以保障自身的稳定发展。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "美国",
+                    "class": "政治事件",
+                    "action": "采用",
+                    "time": "",
+                    "location": "",
+                    "object": "冷战思维并制造假想敌"
+                },
+                "effect": {
+                    "actor": "越来越多的国家",
+                    "class": "政治事件",
+                    "action": "反思",
+                    "time": "",
+                    "location": "",
+                    "object": "大国竞争的意义，并逐渐摒弃零和博弈"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 2928,
+        "text": "通用动力公司授予BAE系统公司一份舰炮合同，以为美海军第四艘濒海战斗舰提供Mk110型57毫米海军舰炮系统。由于这种舰炮系统能够提高舰只的作战能力，美海军随后决定增加对其它舰只的相同舰炮配置。最终，这一决策导致BAE系统公司的生产规模扩大，增强了其在军事装备生产领域的市场地位。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "通用动力公司",
+                    "class": "经济事件",
+                    "action": "授予",
+                    "time": "",
+                    "location": "",
+                    "object": "BAE系统公司一份舰炮合同"
+                },
+                "effect": {
+                    "actor": "美海军",
+                    "class": "军事行动",
+                    "action": "决定",
+                    "time": "",
+                    "location": "",
+                    "object": "增加对其它舰只的相同舰炮配置"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "美海军",
+                    "class": "军事行动",
+                    "action": "决定",
+                    "time": "",
+                    "location": "",
+                    "object": "增加对其它舰只的相同舰炮配置"
+                },
+                "effect": {
+                    "actor": "这一决策",
+                    "class": "",
+                    "action": "导致",
+                    "time": "",
+                    "location": "",
+                    "object": "BAE系统公司的生产规模扩大"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 11346,
+        "text": "美国空军由于需要攻击海上目标，决定改进特克斯特朗系统公司生产的对陆攻击集束弹药。根据空军的指示，特克斯特朗系统公司自5月起在生产线中引入软件改进设计，使SFW具备了攻击海上固定和移动目标的能力。这一改进之后，空军在6月中旬于佛罗里达州沿海的埃格林空军基地成功验证了改进型SFW攻击静止和移动船只的能力。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "美国空军",
+                    "class": "军事行动",
+                    "action": "决定改进",
+                    "time": "",
+                    "location": "",
+                    "object": "特克斯特朗系统公司生产的对陆攻击集束弹药"
+                },
+                "effect": {
+                    "actor": "特克斯特朗系统公司",
+                    "class": "科技发展",
+                    "action": "引入",
+                    "time": "自5月起",
+                    "location": "生产线中",
+                    "object": "软件改进设计"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "特克斯特朗系统公司",
+                    "class": "科技发展",
+                    "action": "引入",
+                    "time": "自5月起",
+                    "location": "生产线中",
+                    "object": "软件改进设计"
+                },
+                "effect": {
+                    "actor": "空军",
+                    "class": "军事行动",
+                    "action": "成功验证",
+                    "time": "6月中旬",
+                    "location": "佛罗里达州沿海的埃格林空军基地",
+                    "object": "改进型SFW攻击静止和移动船只的能力"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 11699,
+        "text": "由于美国海军和诺斯罗普・格鲁曼公司合作开发的MQ-8B火力侦察兵无人机具备垂直起降能力，这两架无人机在1月16日和17日成功地在纳什维尔号运输舰上完成了9次自主降落。此次试验中，无人机从海军航空站起飞后，飞往指定海域并通过战术控制系统的监视以及无人机通用自动回收系统的辅助，在航行中的舰艇上实现了垂直自我控制降落。成功的试验展示了无人机在无人控制情形下的高效操作能力，因此美海军计划将这类无人机用于近海战斗舰，以提升实时视频监控和通信支持。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "美国海军和诺斯罗普・格鲁曼公司",
+                    "class": "科技发展",
+                    "action": "开发",
+                    "time": "1月16日和17日",
+                    "location": "纳什维尔号运输舰上",
+                    "object": "MQ-8B火力侦察兵无人机"
+                },
+                "effect": {
+                    "actor": "无人机",
+                    "class": "军事行动",
+                    "action": "起飞，飞往，降落",
+                    "time": "",
+                    "location": "海军航空站，指定海域，航行中的舰艇",
+                    "object": ""
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "诺斯罗普・格鲁门公司",
+                    "class": "科技发展",
+                    "action": "利用，演示",
+                    "time": "",
+                    "location": "",
+                    "object": "MQ-8B火力侦察兵无人机，多模式海上雷达的能力"
+                },
+                "effect": {
+                    "actor": "诺・格公司",
+                    "class": "科技发展",
+                    "action": "决定",
+                    "time": "",
+                    "location": "",
+                    "object": "进一步展示MQ-8B无人机装备光电/红外载荷及其他传感器的性能"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 10846,
+        "text": "由于芬兰国防军后勤司令部需要增强其夜间作战和精确瞄准能力，他们与芬兰帕特里亚集团旗下的赛诺普公司签订了价值超过1610万美元的合同。合同内容包括赛诺普公司将向芬兰国防军提供M20激光瞄准器、M20战术激光瞄准器和NVG M40单目图像增强器。这些装备的设计和测试是赛诺普公司与芬兰国防军合作完成的，这导致了装备的性能和耐用性得到了保证。因此，预计这些设备将在明年10月底前交付使用。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "芬兰国防军后勤司令部",
+                    "class": "军事行动",
+                    "action": "需要",
+                    "time": "",
+                    "location": "",
+                    "object": "增强其夜间作战和精确瞄准能力"
+                },
+                "effect": {
+                    "actor": "芬兰国防军",
+                    "class": "外交活动",
+                    "action": "签订",
+                    "time": "",
+                    "location": "",
+                    "object": "价值超过1610万美元的合同"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "芬兰国防军",
+                    "class": "外交活动",
+                    "action": "签订",
+                    "time": "",
+                    "location": "",
+                    "object": "价值超过1610万美元的合同"
+                },
+                "effect": {
+                    "actor": "赛诺普公司",
+                    "class": "装备与军备",
+                    "action": "提供",
+                    "time": "",
+                    "location": "",
+                    "object": "M20激光瞄准器、M20战术激光瞄准器和NVG M40单目图像增强器"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "赛诺普公司与芬兰国防军",
+                    "class": "科技发展",
+                    "action": "完成",
+                    "time": "",
+                    "location": "",
+                    "object": "设计和测试"
+                },
+                "effect": {
+                    "actor": "这些设备",
+                    "class": "军事行动",
+                    "action": "交付",
+                    "time": "明年10月底前",
+                    "location": "",
+                    "object": "使用"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 1525,
+        "text": "由于印度与俄罗斯从1995年开始进行航母购买谈判，印度政府决定完成对俄罗斯基辅级航母戈尔什科夫海军上将号的购买。这次购买导致双方进一步加强军事合作，共同开发第5代战斗机并联合生产布拉莫斯反舰巡航导弹。这一深化的军事合作关系使得两国互利共赢，印度进一步在东海岸建立了用于维修和改装俄罗斯生产的潜艇的工厂。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "印度",
+                    "class": "外交活动",
+                    "action": "进行",
+                    "time": "从1995年开始",
+                    "location": "",
+                    "object": "航母购买谈判"
+                },
+                "effect": {
+                    "actor": "印度政府",
+                    "class": "外交活动",
+                    "action": "决定完成",
+                    "time": "",
+                    "location": "",
+                    "object": "对俄罗斯基辅级航母戈尔什科夫海军上将号的购买"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "印度政府",
+                    "class": "外交活动",
+                    "action": "决定完成",
+                    "time": "",
+                    "location": "",
+                    "object": "对俄罗斯基辅级航母戈尔什科夫海军上将号的购买"
+                },
+                "effect": {
+                    "actor": "双方",
+                    "class": "外交活动",
+                    "action": "导致",
+                    "time": "",
+                    "location": "",
+                    "object": "进一步加强军事合作"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "双方",
+                    "class": "外交活动",
+                    "action": "加强",
+                    "time": "",
+                    "location": "",
+                    "object": "军事合作"
+                },
+                "effect": {
+                    "actor": "双方",
+                    "class": "科技发展",
+                    "action": "开发",
+                    "time": "",
+                    "location": "",
+                    "object": "第5代战斗机"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "双方",
+                    "class": "外交活动",
+                    "action": "加强",
+                    "time": "",
+                    "location": "",
+                    "object": "军事合作"
+                },
+                "effect": {
+                    "actor": "双方",
+                    "class": "军事行动",
+                    "action": "生产",
+                    "time": "",
+                    "location": "",
+                    "object": "布拉莫斯反舰巡航导弹"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "双方",
+                    "class": "外交活动",
+                    "action": "加强",
+                    "time": "",
+                    "location": "",
+                    "object": "军事合作"
+                },
+                "effect": {
+                    "actor": "印度",
+                    "class": "军事行动",
+                    "action": "建立",
+                    "time": "",
+                    "location": "东海岸",
+                    "object": "用于维修和改装俄罗斯生产的潜艇的工厂"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 11175,
+        "text": "由于洛克希德·马丁公司负责技术联络并处理安装问题，他们已成功将战斧导弹武器控制系统安装在英国的特拉法尔加潜艇上。该系统的安装在德文波特皇家船厂完成，并且已通过海港验收试验。此外，洛克希德·马丁公司管理了三家英国分承包商，确保了装置的正确安装和功能性。最终，这导致特拉法尔加潜艇将很快进行海试，并预计会顺利交付部队。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "洛克希德·马丁公司",
+                    "class": "科技发展",
+                    "action": "安装",
+                    "time": "",
+                    "location": "英国的特拉法尔加潜艇上",
+                    "object": "战斧导弹武器控制系统"
+                },
+                "effect": {
+                    "actor": "该系统",
+                    "class": "科技发展",
+                    "action": "完成",
+                    "time": "",
+                    "location": "德文波特皇家船厂",
+                    "object": ""
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 10428,
+        "text": "由于美英认为伊朗为胡塞武装提供支持，美英上周对胡塞武装进行空袭，意在施压伊朗。此外，胡塞武装攻击商船并且伊朗扣留美国油轮事件后，空袭也被视为对这些行动的回应。美英在进行空袭前释放信息，使胡塞武装人员得以撤离，显示此举主要是为了警告胡塞武装避免在红海进一步的袭击行为。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "美英",
+                    "class": "政治事件",
+                    "action": "认为",
+                    "time": "",
+                    "location": "",
+                    "object": "伊朗为胡塞武装提供支持"
+                },
+                "effect": {
+                    "actor": "美英",
+                    "class": "军事行动",
+                    "action": "进行",
+                    "time": "上周",
+                    "location": "",
+                    "object": "对胡塞武装进行空袭"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 643,
+        "text": "由于美国空军决定重新开展第II批次SDB项目竞況，波音公司开启了对其SDB武器系统的验证试验。这一验证试验成功确保了SDB可以有效攻击活动目标，从而提升了作战飞机执行攻击任务的能力。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "波音公司",
+                    "class": "科技发展",
+                    "action": "开启",
+                    "time": "",
+                    "location": "",
+                    "object": "对其SDB武器系统的验证试验"
+                },
+                "effect": {
+                    "actor": "验证试验",
+                    "class": "军事行动",
+                    "action": "确保",
+                    "time": "",
+                    "location": "",
+                    "object": "SDB可以有效攻击活动目标"
+                }
+            }
+        ]
+    },
+    {
+        "document_id": 2613,
+        "text": "由于阿穆尔造船厂缺少一批进口零部件，导致正在建造的20380型护卫舰进程受阻。这种延迟进程进一步导致护卫舰的计划交付期被延后。因此，原计划在2015年交付的护卫舰不得不推迟完成日期。",
+        "causality_list": [
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "阿穆尔造船厂",
+                    "class": "经济事件",
+                    "action": "缺少",
+                    "time": "",
+                    "location": "",
+                    "object": "一批进口零部件"
+                },
+                "effect": {
+                    "actor": "20380型护卫舰",
+                    "class": "军事行动",
+                    "action": "受阻",
+                    "time": "",
+                    "location": "",
+                    "object": "进程"
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "20380型护卫舰",
+                    "class": "军事行动",
+                    "action": "受阻",
+                    "time": "",
+                    "location": "",
+                    "object": "进程"
+                },
+                "effect": {
+                    "actor": "护卫舰的计划交付期",
+                    "class": "军事行动",
+                    "action": "被延后",
+                    "time": "",
+                    "location": "",
+                    "object": ""
+                }
+            },
+            {
+                "causality_type": "直接",
+                "cause": {
+                    "actor": "护卫舰的计划交付期",
+                    "class": "军事行动",
+                    "action": "被延后",
+                    "time": "",
+                    "location": "",
+                    "object": ""
+                },
+                "effect": {
+                    "actor": "护卫舰",
+                    "class": "军事行动",
+                    "action": "推迟",
+                    "time": "2015年",
+                    "location": "",
+                    "object": "完成日期"
+                }
+            }
+        ]
+    }
+]
