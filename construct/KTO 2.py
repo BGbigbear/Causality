@@ -6,7 +6,7 @@ from deepdiff import DeepDiff
 # 文件路径
 open_filename = '../data/Alpaca/merge.json'
 instruction_filename = '../data/fewshot/causality_train1_analysis_rougeSFT_full_0.json'
-standard_filename='../data/reconstruction/merge1_1.json'
+standard_filename= '../data/reconstruction/merge1_1.json'
 write_filename = '../data/Alpaca/DPOdatas.json'
 # 使用示例
 def generate_unique_random_result(merged, previous_results, max_attempts=10):
@@ -64,9 +64,19 @@ for document_id, user_content in user_contents_dict.items():
 
     # 添加到新字典列表中
     combined_list.append(combined_entry)
-DPODatas=[]
+DPODatas1=[]
+DPODatas2=[]
 for document in combined_list:
     if not document["MID"]:continue
+    dpodata1 = {
+        "text": document["user_content"],
+        "input": "",
+        "output": "```json\n{\"causality_list\":" + json.dumps(document["causality_list"],
+                                                               ensure_ascii=False) + "}\n```",
+        "kto_tag": "true",
+
+    }
+    DPODatas1.append(dpodata1)
     merged = {}
     # 合并相同的 Valid，并收集对应的 Pred
     for item in document["MID"]:
@@ -84,7 +94,7 @@ for document in combined_list:
         new_result = generate_unique_random_result(merged, previous_results)
         if new_result is None:
             break
-    print(len(previous_results))
+
     for i in range(3):
         if i>=len(previous_results):
             break
@@ -106,17 +116,18 @@ for document in combined_list:
                # 如果没有找到，将整个元素添加到 rejected_list
                rejected_list.append(causality)
 
-        dpodata={
-            "text":document["user_content"],
-            "input":"",
-            "chosen":"```json\n{\"causality_list\":" + json.dumps(document["causality_list"],ensure_ascii=False) + "}\n```",
-            "rejected":"```json\n{\"causality_list\":" + json.dumps(rejected_list,ensure_ascii=False) + "}\n```"
+        dpodata2={
+            "text": document["user_content"],
+            "input": "",
+            "output": "```json\n{\"causality_list\":" + json.dumps(rejected_list, ensure_ascii=False) + "}\n```",
+            "kto_tag": "false"
         }
-        DPODatas.append(dpodata)
+        DPODatas2.append(dpodata2)
 
 
-
-
-print(len(DPODatas))
-with open(write_filename, "w", encoding="utf-8") as outfile:
-    json.dump(DPODatas, outfile, ensure_ascii=False, indent=4)
+print(len(DPODatas1))
+print(len(DPODatas2))
+with open('../DPO and KTO Data construction/DPOTRUE.json', "w", encoding="utf-8") as outfile:
+    json.dump(DPODatas1, outfile, ensure_ascii=False, indent=4)
+with open('../DPO and KTO Data construction/DPOFALSE.json', "w", encoding="utf-8") as outfile:
+    json.dump(DPODatas2, outfile, ensure_ascii=False, indent=4)

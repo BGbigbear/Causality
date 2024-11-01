@@ -1,10 +1,8 @@
 import json
 import random
-from asyncio import Future
-from pickle import FALSE
 
 from tqdm import tqdm
-from judge_same_event import is_similar_event
+from construct.judge_same_event import is_similar_event
 
 open_filename = '../data/Alpaca/merge.json'
 instruction_filename = '../data/fewshot/causality_train1_analysis_rougeSFT_full_0.json'  # 包含 instruction 的数据文件

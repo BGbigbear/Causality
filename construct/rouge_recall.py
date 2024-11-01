@@ -6,7 +6,7 @@ from tqdm import tqdm  # 引入tqdm库
 
 from util.rouge import ngram_rouge
 
-open_filename = "../data/Alpaca/train1_updated_cause_event.json"
+open_filename = "../data/reconstruction/train2_2.json"
 
 # 从文件中加载数据
 with open(open_filename, "r", encoding="utf-8") as f:
