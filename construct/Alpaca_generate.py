@@ -6,7 +6,7 @@ from rouge_recall import final_sel
 open_filename = '../data/Alpaca/train1_updated_cause_event.json'
 write_filename = '../data/Alpaca/train1_plus.json'
 #获取rouge值相似并随机选择3次的序列
-sequence = final_sel()
+sequence = final_sel(open_filename)
 print(len(sequence))
 with open(open_filename, "r", encoding="utf-8") as f:
     data = json.load(f)

@@ -6,14 +6,13 @@ from tqdm import tqdm  # 引入tqdm库
 
 from util.rouge import ngram_rouge
 
-open_filename = "../data/reconstruction/train2_2.json"
-
+def final_sel(open_filename):
 # 从文件中加载数据
-with open(open_filename, "r", encoding="utf-8") as f:
-    data = json.load(f)
+    with open(open_filename, "r", encoding="utf-8") as f:
+       data = json.load(f)
 
 
-def final_sel():
+
     # 存储每个文档的相似度得分
     results = {}
     # 存储最终选择的文档
