@@ -65,7 +65,7 @@ def chat(text, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, mode
     # ]
 
     messages = [
-        {"role": "user", "content": f"{few_shot}\n\n{prompts[0]}\n\n\"text\": {text}"}
+        {"role": "user", "content": f"{few_shot}{prompts[0]}\"text\": {text}"}
     ]
     append_messages()
 
@@ -79,9 +79,6 @@ def chat(text, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, mode
 
 
 def check_json_structure(json_data):
-    required_keys = {
-        "actor", "class", "action", "time", "location", "object"
-    }
     event_classes = ["经济事件", "科技发展", "军事行动", "安全事件", "航空航天活动", "装备与军备", "社会事件", "外交活动", "政治事件"]
 
     if "causality_list" not in json_data:
@@ -89,6 +86,13 @@ def check_json_structure(json_data):
         return False
 
     for idx, causality in enumerate(json_data["causality_list"]):
+        if "causality_description" not in causality:
+            print(f"\nDocument is missing 'causality_description'.")
+            return False
+        if "causality_type" not in causality:
+            print(f"\nDocument is missing 'causality_type'.")
+            return False
+
         for role in event_roles:
             if not isinstance(causality, dict):
                 print(f"\nEvent {idx}, '{role}' is not dict")
@@ -105,8 +109,8 @@ def check_json_structure(json_data):
             if extra_keys:
                 print(f"\nEvent {idx}, '{role}' has extra keys: {extra_keys}.")
                 return False
-            # if event['class'] not in event_classes:
-            #     print(f"\nEvent {idx}, '{role}' type error: {event['class']}.")
+            if event['class'] not in event_classes:
+                print(f"\nEvent {idx}, '{role}' type error: {event['class']}.")
             #     return False
 
     return True
@@ -236,17 +240,20 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
                 future_to_doc[future] = doc
 
             for future in as_completed(future_to_doc):
-                res = future.result()
-                if res:
-                    msg_data.append(res['msg_data'])
-                    result_data.append(res['result_data'])
+                try:
+                    res = future.result()
+                    if res:
+                        msg_data.append(res['msg_data'])
+                        result_data.append(res['result_data'])
 
-                total = len(msg_data)
-                finished = max(total - init_finished, 1)
-                total_time = time.time() - start_time
-                extra_info = (f"Task {total}/{n} | "
-                              f"Elapsed Time: {convert_seconds(total_time)}, {total_time/finished:.2f}s/it   ")
-                progress_bar(total, n, extra_info=extra_info)
+                    total = len(msg_data)
+                    finished = max(total - init_finished, 1)
+                    total_time = time.time() - start_time
+                    extra_info = (f"Task {total}/{n} | "
+                                  f"Elapsed Time: {convert_seconds(total_time)}, {total_time/finished:.2f}s/it   ")
+                    progress_bar(total, n, extra_info=extra_info)
+                except Exception as e:
+                    print(f"Exception occurred for document {future_to_doc[future]['document_id']}: {e}")
         print("\nInference finished")
     finally:
         print("Start writing files")

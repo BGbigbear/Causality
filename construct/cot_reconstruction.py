@@ -38,5 +38,43 @@ def cot_construct():
         json.dump(cot_data, f_cot, ensure_ascii=False, indent=4)
 
 
+def cot_deconstruct():
+    with (
+        open("../result/causality_test2cot_predict_rougeSFT_full_1.json", "r", encoding='utf-8') as f_cot,
+        open("../result/causality_test2_predict_rougeSFT_full_1.json", "w", encoding='utf-8') as f_raw,
+    ):
+        cot_data, raw_data = json.load(f_cot), []
+        for doc in cot_data:
+            new_list = []
+            for c_list in doc['causality_list']:
+                new_list.append({
+                    "causality_type": c_list["causality_type"],
+                    "cause": {
+                        "actor": c_list["cause"]["actor"],
+                        "class": c_list["cause"]["class"],
+                        "action": c_list["cause"]["action"],
+                        "time": c_list["cause"]["time"],
+                        "location": c_list["cause"]["location"],
+                        "object": c_list["cause"]["object"]
+                    },
+                    "effect": {
+                        "actor": c_list["effect"]["actor"],
+                        "class": c_list["effect"]["class"],
+                        "action": c_list["effect"]["action"],
+                        "time": c_list["effect"]["time"],
+                        "location": c_list["effect"]["location"],
+                        "object": c_list["effect"]["object"]
+                    }
+                })
+            raw_data.append({
+                "document_id": doc['document_id'],
+                "text": doc['text'],
+                "causality_list": new_list
+            })
+
+        json.dump(raw_data, f_raw, ensure_ascii=False, indent=4)
+
+
 if __name__ == '__main__':
-    cot_construct()
+    # cot_construct()
+    cot_deconstruct()

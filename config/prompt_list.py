@@ -301,7 +301,7 @@ causality_prompts_3shots = [
 3.只需要提取这些类别：{'军事行动', '外交活动', '安全事件', '政治事件', '社会事件', '科技发展', '经济事件', '航空航天活动', '装备与军备'}的事件，其他类别的事件不要提取。
 4.只需要抽取关键事件，并以重要程度排序。不关键的事件不包括在结果中。对于如何判断什么是关键事件，可以参考所给出的示例。
 5.结果要以json的格式返回。{"causality_list": [{"causality_type": "直接","cause_event": {"actor": ...,"class": ...,"action": ...,"time": ...,"location": ...,"object": ...},"effect_event": }
-    """
+"""
 ]
 
 causality_prompts_3shots_cot = [
@@ -313,5 +313,5 @@ causality_prompts_3shots_cot = [
 3.只需要提取这些类别：{'军事行动', '外交活动', '安全事件', '政治事件', '社会事件', '科技发展', '经济事件', '航空航天活动', '装备与军备'}的事件，其他类别的事件不要提取。
 4.只需要抽取关键事件，并以重要程度排序。不关键的事件不包括在结果中。对于如何判断什么是关键事件，可以参考所给出的示例。
 5.结果要以json的格式返回。{"causality_list": [{"causality_description": ...,"causality_type": "直接","cause_event": {"event_description": ...,"actor": ...,"class": ...,"action": ...,"time": ...,"location": ...,"object": ...},"effect_event": }
-    """
+"""
 ]
