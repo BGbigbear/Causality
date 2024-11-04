@@ -49,29 +49,24 @@ def convert_seconds(seconds):
         return f"{hours:.0f} h {minutes:.0f} m {remaining_seconds:.0f} s"
 
 
-def chat(text, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, model=None, using_api=False):
+def chat(texts, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, model=None, sam=None, inference_mode=0):
     def append_messages():
-        if not using_api:
-            messages.append({"role": "assistant", "content": model_generation(tokenizer, model, messages)})
+        if inference_mode == 0:
+            messages[0].append({"role": "assistant", "content": chat_completion(messages[0])})
         else:
-            messages.append({"role": "assistant", "content": chat_completion(messages)})
+            responses = model_generation(tokenizer, model, messages, sam, use_vllm)
+            for idx, response in enumerate(responses):
+                messages[idx].append({"role": "assistant", "content": response})
 
-    # q1 = f"文本：{text}" + f"\n参考：\n{few_shot}" if few_shot else f"文本：{text}"
-    # q1 += f"\n({prompts[1]})"
-    #
-    # messages = [
-    #     {"role": "system", "content": prompts[0]},
-    #     {"role": "user", "content": q1}
-    # ]
-
-    messages = [
-        {"role": "user", "content": f"{few_shot}{prompts[0]}\"text\": {text}"}
-    ]
+    use_vllm = True if inference_mode == 2 else False
+    messages = [[{"role": "user",
+                  "content": f"{few_shot[i]}{prompts[0]}\"text\": {texts[i]}"}] for i in range(len(texts))]
     append_messages()
 
     for i in range(1, len(prompts)):
         if i > 1:
-            messages.append({"role": "user", "content": prompts[i]})
+            for j in range(len(messages)):
+                messages[j].append({"role": "user", "content": prompts[i]})
 
         append_messages()
 
@@ -79,7 +74,8 @@ def chat(text, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, mode
 
 
 def check_json_structure(json_data):
-    event_classes = ["经济事件", "科技发展", "军事行动", "安全事件", "航空航天活动", "装备与军备", "社会事件", "外交活动", "政治事件"]
+    event_classes = ["经济事件", "科技发展", "军事行动", "安全事件", "航空航天活动", "装备与军备", "社会事件",
+                     "外交活动", "政治事件"]
 
     if "causality_list" not in json_data:
         print(f"\nDocument is missing 'causality_list'.")
@@ -130,19 +126,18 @@ def rearrange(test_data, result_data, start_point, end_point, rename=True):
                 tmp_data = tmp_data.replace("cause_event", "cause").replace("effect_event", "effect")
                 data = json.loads(tmp_data)
             result.append(data)
-        elif idx >= start_point:
+        elif idx >= start_point and rename:
             print(f"Missing document, id: {doc_id}")
         idx += 1
 
     return result
 
 
-def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_api, tokenizer, model):
-    few_shot = ""
-    if rouge:
+def preprocess(doc, causality_data, retriever, preprocess_mode):
+    if preprocess_mode == 1:  # ROUGE
         shots = {"Event_extraction_examples": top_similar_text(doc['text'], causality_data, top_k=3)}
-        few_shot += json.dumps(shots, ensure_ascii=False)
-    elif rag:
+        few_shot = json.dumps(shots, ensure_ascii=False)
+    else:  # preprocess_mode == 2, RAG
         vector_search_results = retriever.invoke(f"{doc['text']}")
         shots = []
         for search_result in vector_search_results:
@@ -150,52 +145,123 @@ def process_document(doc, causality_data, retriever, rouge, rag, prompts, using_
             shot = {"text": causality_data[int(content[0])]['text'],
                     "causality_list": causality_data[int(content[0])]['causality_list']}
             shots.append(shot)
-        few_shot += json.dumps(shots, ensure_ascii=False)
+        few_shot = json.dumps(shots, ensure_ascii=False)
+    return few_shot
 
-    msgs = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)  # generate
-    content = msgs[-1]['content']
 
-    max_retries, retries, circle_flag = 5, 0, False
-    while retries < max_retries:
-        if circle_flag:
-            # completion = chat_completion(msgs[:-1])
-            # content = str(completion.choices[0].message.content)
-            msgs = chat(doc['text'], few_shot, prompts, tokenizer, model, using_api)
-            content = msgs[-1]['content']
-        try:
-            result = json.loads(content[content.find('{'): content.rfind(']') + 1] + "\n}")
-            if not check_json_structure(result):
-                logging.error(f"\nJSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: "
-                              f"Json structure error.")
-                circle_flag = True
+def process_document(doc, causality_data, retriever, preprocess_mode, inference_mode, tok, model, sam, max_workers):
+    if inference_mode == 0:  # API mode, doc is a dict
+        few_shot = [preprocess(doc, causality_data, retriever, preprocess_mode)] if preprocess_mode != 0 else []
+
+        max_retries, retries, circle_flag = 5, 0, False
+        while retries < max_retries:
+            msgs = chat([doc['text']], few_shot, global_prompts, tok, model, sam, inference_mode)
+            content = msgs[0][-1]['content']
+            try:
+                content = content[content.find('{'): content.rfind(']') + 1] + "\n}"
+                content = content.replace('\\n', '\n')
+                result = json.loads(content)
+                if not check_json_structure(result):
+                    logging.error(f"\nJSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: "
+                                  f"Json structure error.")
+                    retries += 1
+                    continue
+                return {
+                    'msg_data': {"document_id": doc['document_id'], "text": doc['text'], "analysis": msgs},
+                    'result_data': {"document_id": doc['document_id'], "text": doc['text'], **result}
+                }
+            except ValueError as e:
+                logging.error(f"\nJSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: {e}")
                 retries += 1
-                continue
-            return {
-                'msg_data': {"document_id": doc['document_id'], "text": doc['text'], "analysis": msgs},
-                'result_data': {"document_id": doc['document_id'], "text": doc['text'], **result}
-            }
-        except ValueError as e:
-            logging.error(f"\nJSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: {e}")
-            circle_flag = True
+
+        logging.error(f"Failed to process document {doc['document_id']} after {max_retries} attempts.")
+    else:  # inference_mode == 1, 2, vllm mode, doc is a list of dict
+        def get_data(data):
+            return ({
+                'id': data['document_id'],
+                'data': {
+                    "few_shot": (preprocess(data, causality_data, retriever, preprocess_mode)
+                                 if not preprocess_mode else ""),
+                    "text": data['text']
+                }
+            })
+
+        thread_data = {}
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(get_data, d): d for d in doc}
+
+            for future in as_completed(futures):
+                res = future.result()
+                thread_data[res['id']] = res['data']
+
+        few_shot, texts = [], []
+        for d in doc:
+            few_shot.append(thread_data[d['document_id']]['few_shot'])
+            texts.append(thread_data[d['document_id']]['text'])
+
+        msg_part, result_part = [], []  # return elements
+        max_retries, retries, circle_flag = 5, 0, False
+        missing_list = list(range(len(texts)))
+        while retries < max_retries:
+            print(f"\nTrying to generate formatted Json data, attempt {retries + 1} ...")
+            msgs = chat(texts, few_shot, global_prompts, tok, model, sam, inference_mode)  # generate
+            err_list, retry_texts, retry_shot = [], [], []
+            for i, msg in enumerate(msgs):
+                content = msg[-1]['content']
+                idx = missing_list[i]  # doc id
+                try:
+                    content = content[content.find('{'): content.rfind(']') + 1] + "\n}"
+                    content = content.replace('\\n', '\n')
+                    result = json.loads(content)
+                    if not check_json_structure(result):
+                        logging.error(f"\nJSON parsing failed on attempt {retries + 1} "
+                                      f"of document_{doc[idx]['document_id']}: Json structure error.")
+                        err_list.append(idx)
+                        retry_texts.append(texts[idx])
+                        retry_shot.append(few_shot[idx])
+                        continue
+                    msg_part.append({"document_id": doc[idx]['document_id'], "text": doc[idx]['text'], "analysis": msg})
+                    result_part.append({"document_id": doc[idx]['document_id'], "text": doc[idx]['text'],
+                                        "causality_list": result['causality_list']})
+                except ValueError as e:
+                    err_list.append(idx)
+                    retry_texts.append(texts[idx])
+                    retry_shot.append(few_shot[idx])
+                    logging.error(f"\nJSON parsing failed on attempt {retries + 1} "
+                                  f"of document_{doc[idx]['document_id']}: {e}")
+            if not err_list:
+                break
+            missing_list = err_list
+            texts = retry_texts
+            few_shot = retry_shot
             retries += 1
+        return msg_part, result_part
 
-    logging.error(f"Failed to process document {doc['document_id']} after {max_retries} attempts.")
 
-
-def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10, using_api=False, recheck=False):
-    tokenizer, model = None, None
-    if not using_api:
-        tokenizer, model = load_model(model_path)
+def generate(start_point=0, end_point=0, preprocess_mode=0, max_workers=10, inference_mode=0, recheck=False):
+    """
+    Generate
+    :param start_point:
+    :param end_point:
+    :param preprocess_mode: 0 - No preprocess; 1 - Use rouge; 2- Use rag
+    :param max_workers:
+    :param inference_mode: 0 - Use API; 1 - Use local model; 2 - Use vllm
+    :param recheck:
+    :return:
+    """
+    tokenizer, model, sampling_params = None, None, None
+    if inference_mode != 0:
+        tokenizer, model, sampling_params = load_model(True if inference_mode == 2 else False)
 
     with open(test_file, 'r', encoding='utf-8') as f_test:
         test_data = json.load(f_test)
 
     # using RAG
     causality_data, retriever = None, None
-    if rag or rouge:
+    if preprocess_mode:
         with open(causality_file, 'r', encoding='utf-8') as f_causality:
             causality_data = json.load(f_causality)
-        if rag:
+        if preprocess_mode == 2:
             # retriever = load_retriever(causality_data, db_path)
             pass
 
@@ -222,38 +288,49 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
         miss_set = doc_set - cur_set
         print(f"\nMissing document set: {miss_set}")
     try:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_doc = {}
-            for i, doc in enumerate(test_data):
-                if start_point != 0 and i < start_point:
-                    # progress_bar(i - start_point + 1, n)
-                    continue
-                if end_point != 0 and i >= end_point:
-                    break
-                if recheck and doc['document_id'] not in miss_set:
-                    continue
+        if inference_mode == 0 or inference_mode == 1:  # API or local model
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_doc = {}
+                for i, doc in enumerate(test_data):
+                    if start_point != 0 and i < start_point:
+                        # progress_bar(i - start_point + 1, n)
+                        continue
+                    if end_point != 0 and i >= end_point:
+                        break
+                    if recheck and doc['document_id'] not in miss_set:
+                        continue
 
-                future = executor.submit(
-                    process_document,
-                    doc, causality_data, retriever, rouge, rag, global_prompts, using_api, tokenizer, model
-                )
-                future_to_doc[future] = doc
+                    future = executor.submit(
+                        process_document,
+                        doc, causality_data, retriever, preprocess_mode,
+                        inference_mode, tokenizer, model, sampling_params, max_workers
+                    )
+                    future_to_doc[future] = doc
 
-            for future in as_completed(future_to_doc):
-                try:
-                    res = future.result()
-                    if res:
-                        msg_data.append(res['msg_data'])
-                        result_data.append(res['result_data'])
+                for future in as_completed(future_to_doc):
+                    try:
+                        res = future.result()
+                        if res:
+                            msg_data.append(res['msg_data'])
+                            result_data.append(res['result_data'])
 
-                    total = len(msg_data)
-                    finished = max(total - init_finished, 1)
-                    total_time = time.time() - start_time
-                    extra_info = (f"Task {total}/{n} | "
-                                  f"Elapsed Time: {convert_seconds(total_time)}, {total_time/finished:.2f}s/it   ")
-                    progress_bar(total, n, extra_info=extra_info)
-                except Exception as e:
-                    print(f"Exception occurred for document {future_to_doc[future]['document_id']}: {e}")
+                        total = len(msg_data)
+                        finished = max(total - init_finished, 1)
+                        total_time = time.time() - start_time
+                        extra_info = (f"Task {total}/{n} | "
+                                      f"Elapsed Time: {convert_seconds(total_time)}, {total_time / finished:.2f}s/it  ")
+                        progress_bar(total, n, extra_info=extra_info)
+                    except Exception as e:
+                        print(f"Exception occurred for document {future_to_doc[future]['document_id']}: {e}")
+        if inference_mode == 2:  # vllm
+            docs = test_data[start_point: end_point if end_point != 0 else len(test_data)]
+            if recheck:
+                docs = [doc for doc in docs if doc['document_id'] in miss_set]
+            msg_tmp, result_tmp = process_document(docs, causality_data, retriever, preprocess_mode,
+                                                   inference_mode, tokenizer, model, sampling_params, max_workers)
+            msg_data.extend(msg_tmp)
+            result_data.extend(result_tmp)
+
         print("\nInference finished")
     finally:
         print("Start writing files")
@@ -268,4 +345,4 @@ def generate(start_point=0, end_point=0, rouge=False, rag=False, max_workers=10,
 
 
 if __name__ == '__main__':
-    generate(start_point=0, end_point=10, rouge=True)
+    generate(start_point=0, end_point=10)

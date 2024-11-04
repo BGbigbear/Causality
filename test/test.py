@@ -1,11 +1,11 @@
 def dpo_check():
-    with open('../data/Alpaca/train1_dpo_bad.json', 'r', encoding='utf-8') as f:
+    with open('../data/Alpaca/train2_dpo_mid.json', 'r', encoding='utf-8') as f:
         import json
         data = json.load(f)
         for i, d in enumerate(data):
             chosen = json.loads(d['chosen'][8:-4])
             rejected = json.loads(d['rejected'][8:-4])
-            if len(chosen['causality_list']) < len(rejected['causality_list']):
+            if len(chosen['causality_list']) != len(rejected['causality_list']):
                 print(i)
 
 
@@ -25,4 +25,4 @@ def class_extraction():
 
 
 if __name__ == '__main__':
-    class_extraction()
+    dpo_check()

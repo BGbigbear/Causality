@@ -12,11 +12,11 @@ def cot_construct():
             new_list = []
             for c_list in doc['causality_list']:
                 cause, effect = c_list['cause_event'], c_list['effect_event']
-                cause_desc = (f"{cause['actor']}{"于"+cause['time'] if cause['time'] else ""}"
-                              f"{"在"+cause['location'] if cause['location'] else ""}"
+                cause_desc = (f"{cause['actor']}{'于' + cause['time'] if cause['time'] else ''}"
+                              f"{'在' + cause['location'] if cause['location'] else ''}"
                               f"{cause['action']}{cause['object']}")
-                effect_desc = (f"{effect['actor']}{"于"+effect['time'] if effect['time'] else ""}"
-                               f"{"在"+effect['location'] if effect['location'] else ""}"
+                effect_desc = (f"{effect['actor']}{'于' + effect['time'] if effect['time'] else ''}"
+                               f"{'在' + effect['location'] if effect['location'] else ''}"
                                f"{effect['action']}{effect['object']}")
                 full_desc = f"{cause_desc}{c_list['causality_type']}导致{effect_desc}"
                 cause_event = {"event_description": cause_desc}
@@ -40,8 +40,8 @@ def cot_construct():
 
 def cot_deconstruct():
     with (
-        open("../result/causality_test2cot_predict_rougeSFT_full_1.json", "r", encoding='utf-8') as f_cot,
-        open("../result/causality_test2_predict_rougeSFT_full_1.json", "w", encoding='utf-8') as f_raw,
+        open("../result/causality_test2cot_predict_rougeSFT_full_0.json", "r", encoding='utf-8') as f_cot,
+        open("../result/causality_test2raw_predict_rougeSFT_full_0.json", "w", encoding='utf-8') as f_raw,
     ):
         cot_data, raw_data = json.load(f_cot), []
         for doc in cot_data:

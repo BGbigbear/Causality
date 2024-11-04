@@ -1,12 +1,15 @@
 import time
-
 import requests
 import torch
 from openai import OpenAI
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from vllm import LLM, SamplingParams  # local import
+from vllm.lora.request import LoRARequest
 
 url = "https://api.deepinfra.com/v1/openai"
 key = "4GT75Atw94Q4j044iBAT1AK85NreqXJU"
+model_path = "/workspace/Models/qwen/Qwen2.5-7B-Instruct/"
+adapter_path = ""
 client = OpenAI(
     api_key=key,
     base_url=url,
@@ -14,7 +17,7 @@ client = OpenAI(
 
 
 def chat_completion(messages, model="google/gemma-2-27b-it", retries=5, backoff=2):
-    # model = "Qwen/Qwen2.5-72B-Instruct"
+    model = "Qwen/Qwen2.5-72B-Instruct"
     attempt = 0
     while attempt < retries:
         try:
@@ -59,31 +62,49 @@ def request_api(messages, model="google/gemma-2-27b-it", retries=5, backoff=2):
     return None
 
 
-def load_model(model_path):
+def load_model(vllm=False):
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path,
-        device_map="auto",
-        torch_dtype=torch.bfloat16,
-    )
-    return tokenizer, model
+    sampling_params = None
+    if not vllm:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            device_map="auto",
+            torch_dtype=torch.bfloat16,
+        )
+    else:
+        sampling_params = SamplingParams(temperature=0.7, top_p=0.8, repetition_penalty=1.05, max_tokens=8192)
+        model = LLM(
+            model=model_path, max_model_len=10240,
+            tensor_parallel_size=2,
+            enable_lora=True
+        )
+
+    return tokenizer, model, sampling_params
 
 
-def model_generation(tokenizer, model, messages):
+def model_generation(tokenizer, model, messages, sampling_params, using_vllm=False):
     # input_text = "Write me a poem about Machine Learning."
     # input_ids = tokenizer(input_text, return_tensors="pt").to("cuda")
-    input_ids = tokenizer.apply_chat_template(messages, return_tensors="pt", return_dict=True).to("cuda")
-
-    outputs = model.generate(**input_ids, max_new_tokens=256)
-    return tokenizer.decode(outputs[0])
+    if not using_vllm:
+        input_ids = tokenizer.apply_chat_template(messages, return_tensors="pt", return_dict=True).to("cuda")
+        outputs = model.generate(**input_ids, max_new_tokens=256)
+        return tokenizer.decode(outputs[0])
+    else:
+        input_ids = [tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
+                     for message in messages]
+        response = model.generate(
+            input_ids, sampling_params,
+            lora_request=LoRARequest('adapter', 1, adapter_path)
+        )
+        return [f"{output.outputs[0].text!r}" for output in response]
 
 
 if __name__ == '__main__':
     msgs = [
         {"role": "user", "content": "Hello"}
     ]
-    # tok, mod = load_model("gemma2")
-    # print(model_generation(tok, mod, msgs))
+    tok, mod, sam = load_model(True)
+    print(model_generation(tok, mod, msgs, sam, True))
     # print(chat_completion(msgs))
 
     print(request_api(msgs))
