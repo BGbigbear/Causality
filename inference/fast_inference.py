@@ -187,7 +187,7 @@ def process_document(doc, causality_data, retriever, preprocess_mode, inference_
             })
 
         thread_data = {}
-        print("Few-shot generation begin.")
+        print("\nFew-shot generation begin.")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(get_data, d): d for d in doc}
 
