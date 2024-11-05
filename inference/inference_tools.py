@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 url = "https://api.deepinfra.com/v1/openai"
 # url = "http://127.0.0.1:8001/v1"
-key = "4GT75Atw94Q4j044iBAT1AK85NreqXJU"
+key = ""
 model_path = "/workspace/Models/qwen/Qwen2.5-7B-Instruct/"
 adapter_path = ""
 client = OpenAI(
