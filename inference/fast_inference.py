@@ -181,12 +181,13 @@ def process_document(doc, causality_data, retriever, preprocess_mode, inference_
                 'id': data['document_id'],
                 'data': {
                     "few_shot": (preprocess(data, causality_data, retriever, preprocess_mode)
-                                 if not preprocess_mode else ""),
+                                 if preprocess_mode else ""),
                     "text": data['text']
                 }
             })
 
         thread_data = {}
+        print("Few-shot generation begin.")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(get_data, d): d for d in doc}
 
@@ -194,6 +195,7 @@ def process_document(doc, causality_data, retriever, preprocess_mode, inference_
                 res = future.result()
                 thread_data[res['id']] = res['data']
 
+        print("Few-shot generation end.")
         few_shot, texts = [], []
         for d in doc:
             few_shot.append(thread_data[d['document_id']]['few_shot'])
@@ -326,10 +328,11 @@ def generate(start_point=0, end_point=0, preprocess_mode=0, max_workers=10, infe
             docs = test_data[start_point: end_point if end_point != 0 else len(test_data)]
             if recheck:
                 docs = [doc for doc in docs if doc['document_id'] in miss_set]
-            msg_tmp, result_tmp = process_document(docs, causality_data, retriever, preprocess_mode,
-                                                   inference_mode, tokenizer, model, sampling_params, max_workers)
-            msg_data.extend(msg_tmp)
-            result_data.extend(result_tmp)
+            if len(docs) > 0:
+                msg_tmp, result_tmp = process_document(docs, causality_data, retriever, preprocess_mode,
+                                                       inference_mode, tokenizer, model, sampling_params, max_workers)
+                msg_data.extend(msg_tmp)
+                result_data.extend(result_tmp)
 
         print("\nInference finished")
     finally:
