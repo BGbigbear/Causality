@@ -40,8 +40,8 @@ def cot_construct():
 
 def cot_deconstruct():
     with (
-        open("../result/causality_test2cot_predict_rougeSFT_full_0.json", "r", encoding='utf-8') as f_cot,
-        open("../result/causality_test2raw_predict_rougeSFT_full_0.json", "w", encoding='utf-8') as f_raw,
+        open("../result/causality_test2cot_predict_rougeSFT_full_2.json", "r", encoding='utf-8') as f_cot,
+        open("../result/causality_test2raw_predict_rougeSFT_full_2.json", "w", encoding='utf-8') as f_raw,
     ):
         cot_data, raw_data = json.load(f_cot), []
         for doc in cot_data:

@@ -3,10 +3,9 @@ import requests
 import torch
 from openai import OpenAI
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from vllm import LLM, SamplingParams  # local import
-from vllm.lora.request import LoRARequest
 
 url = "https://api.deepinfra.com/v1/openai"
+# url = "http://127.0.0.1:8001/v1"
 key = "4GT75Atw94Q4j044iBAT1AK85NreqXJU"
 model_path = "/workspace/Models/qwen/Qwen2.5-7B-Instruct/"
 adapter_path = ""
@@ -72,7 +71,10 @@ def load_model(vllm=False):
             torch_dtype=torch.bfloat16,
         )
     else:
-        sampling_params = SamplingParams(temperature=0.7, top_p=0.8, repetition_penalty=1.05, max_tokens=8192)
+        from vllm import LLM, SamplingParams  # local import
+
+        # sampling_params = SamplingParams(temperature=0.7, top_p=0.8, repetition_penalty=1.05, max_tokens=10240)  # qwen
+        sampling_params = SamplingParams(temperature=0.7, top_p=0.9, repetition_penalty=1.00, max_tokens=8192)  # gemma
         model = LLM(
             model=model_path, max_model_len=10240,
             tensor_parallel_size=2,
@@ -90,6 +92,8 @@ def model_generation(tokenizer, model, messages, sampling_params, using_vllm=Fal
         outputs = model.generate(**input_ids, max_new_tokens=256)
         return tokenizer.decode(outputs[0])
     else:
+        from vllm.lora.request import LoRARequest
+
         input_ids = [tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
                      for message in messages]
         response = model.generate(
