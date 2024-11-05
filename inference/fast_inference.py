@@ -187,6 +187,7 @@ def process_document(doc, causality_data, retriever, preprocess_mode, inference_
             })
 
         thread_data = {}
+        start_time = time.time()
         print("\nFew-shot generation begin.")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(get_data, d): d for d in doc}
@@ -195,7 +196,7 @@ def process_document(doc, causality_data, retriever, preprocess_mode, inference_
                 res = future.result()
                 thread_data[res['id']] = res['data']
 
-        print("Few-shot generation end.")
+        print(f"Few-shot generation end. Total elapsed time: {convert_seconds(time.time() - start_time)}")
         few_shot, texts = [], []
         for d in doc:
             few_shot.append(thread_data[d['document_id']]['few_shot'])
