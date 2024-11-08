@@ -71,20 +71,18 @@ def load_model(vllm=False):
             torch_dtype=torch.bfloat16,
         )
     else:
-        from vllm import LLM, SamplingParams  # local import
+        from vllm import LLM  # local import
 
-        # sampling_params = SamplingParams(temperature=0.7, top_p=0.8, repetition_penalty=1.05, max_tokens=10240)  # qwen
-        sampling_params = SamplingParams(temperature=0.7, top_p=0.9, repetition_penalty=1.00, max_tokens=8192)  # gemma
         model = LLM(
             model=model_path, max_model_len=10240,
             tensor_parallel_size=2,
-            enable_lora=True
+            # enable_lora=True
         )
 
-    return tokenizer, model, sampling_params
+    return tokenizer, model
 
 
-def model_generation(tokenizer, model, messages, sampling_params, using_vllm=False):
+def model_generation(tokenizer, model, messages, n=10, using_vllm=False):
     # input_text = "Write me a poem about Machine Learning."
     # input_ids = tokenizer(input_text, return_tensors="pt").to("cuda")
     if not using_vllm:
@@ -92,23 +90,30 @@ def model_generation(tokenizer, model, messages, sampling_params, using_vllm=Fal
         outputs = model.generate(**input_ids, max_new_tokens=256)
         return tokenizer.decode(outputs[0])
     else:
+        from vllm import SamplingParams
         from vllm.lora.request import LoRARequest
 
+        sampling_params = SamplingParams(n=n, temperature=1.0, top_p=0.8, repetition_penalty=1.05, max_tokens=131072)
         input_ids = [tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
                      for message in messages]
         response = model.generate(
             input_ids, sampling_params,
-            lora_request=LoRARequest('adapter', 1, adapter_path)
+            # lora_request=LoRARequest('adapter', 1, adapter_path)
         )
-        return [f"{output.outputs[0].text!r}" for output in response]
+        if n == 1:
+            return [f"{output.outputs[0].text!r}" for output in response]
+        else:
+            from util.rouge import select_best_output
+
+            return [select_best_output(output, n, 3) for output in response]
 
 
 if __name__ == '__main__':
     msgs = [
         {"role": "user", "content": "Hello"}
     ]
-    tok, mod, sam = load_model(True)
-    print(model_generation(tok, mod, msgs, sam, True))
+    tok, mod = load_model(True)
+    print(model_generation(tok, mod, msgs, True))
     # print(chat_completion(msgs))
 
     print(request_api(msgs))

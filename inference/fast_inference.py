@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from config.configuration import *
@@ -49,12 +50,12 @@ def convert_seconds(seconds):
         return f"{hours:.0f} h {minutes:.0f} m {remaining_seconds:.0f} s"
 
 
-def chat(texts, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, model=None, sam=None, inference_mode=0):
+def chat(texts, few_shot=None, prompts=causality_prompts_v0, tokenizer=None, model=None, inference_mode=0):
     def append_messages():
         if inference_mode == 0:
             messages[0].append({"role": "assistant", "content": chat_completion(messages[0])})
         else:
-            responses = model_generation(tokenizer, model, messages, sam, use_vllm)
+            responses = model_generation(tokenizer, model, messages, using_vllm=use_vllm)
             for idx, response in enumerate(responses):
                 messages[idx].append({"role": "assistant", "content": response})
 
@@ -82,9 +83,9 @@ def check_json_structure(json_data):
         return False
 
     for idx, causality in enumerate(json_data["causality_list"]):
-        if "causality_description" not in causality:
-            print(f"\nDocument is missing 'causality_description'.")
-            return False
+        # if "causality_description" not in causality:
+        #     print(f"\nDocument is missing 'causality_description'.")
+        #     return False
         if "causality_type" not in causality:
             print(f"\nDocument is missing 'causality_type'.")
             return False
@@ -149,17 +150,24 @@ def preprocess(doc, causality_data, retriever, preprocess_mode):
     return few_shot
 
 
-def process_document(doc, causality_data, retriever, preprocess_mode, inference_mode, tok, model, sam, max_workers):
+def process_document(doc, causality_data, retriever, preprocess_mode, inference_mode, tok, model, max_workers):
+    def handle_json(s):
+        s = s[s.find('{'): s.rfind(']') + 1] + "}"
+        s = s.replace('\\n', '\n')
+        s = re.sub(r'(\\\"(.*?)\\\"|\'(.*?)\')', lambda m: f'“{m.group(2) or m.group(3)}”', s)
+        s = s.replace('\\“', '“').replace('\\”', '”')
+
+        return s
+
     if inference_mode == 0:  # API mode, doc is a dict
         few_shot = [preprocess(doc, causality_data, retriever, preprocess_mode)] if preprocess_mode != 0 else []
 
         max_retries, retries, circle_flag = 5, 0, False
         while retries < max_retries:
-            msgs = chat([doc['text']], few_shot, global_prompts, tok, model, sam, inference_mode)
+            msgs = chat([doc['text']], few_shot, global_prompts, tok, model, inference_mode)
             content = msgs[0][-1]['content']
             try:
-                content = content[content.find('{'): content.rfind(']') + 1] + "\n}"
-                content = content.replace('\\n', '\n')
+                content = handle_json(content)
                 result = json.loads(content)
                 if not check_json_structure(result):
                     logging.error(f"\nJSON parsing failed on attempt {retries + 1} of document_{doc['document_id']}: "
@@ -187,8 +195,8 @@ def process_document(doc, causality_data, retriever, preprocess_mode, inference_
             })
 
         thread_data = {}
-        start_time = time.time()
         print("\nFew-shot generation begin.")
+        start_time = time.time()
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(get_data, d): d for d in doc}
 
@@ -207,29 +215,28 @@ def process_document(doc, causality_data, retriever, preprocess_mode, inference_
         missing_list = list(range(len(texts)))
         while retries < max_retries:
             print(f"\nTrying to generate formatted Json data, attempt {retries + 1} ...")
-            msgs = chat(texts, few_shot, global_prompts, tok, model, sam, inference_mode)  # generate
+            msgs = chat(texts, few_shot, global_prompts, tok, model, inference_mode)  # generate
             err_list, retry_texts, retry_shot = [], [], []
             for i, msg in enumerate(msgs):
                 content = msg[-1]['content']
                 idx = missing_list[i]  # doc id
                 try:
-                    content = content[content.find('{'): content.rfind(']') + 1] + "\n}"
-                    content = content.replace('\\n', '\n')
+                    content = handle_json(content)
                     result = json.loads(content)
                     if not check_json_structure(result):
                         logging.error(f"\nJSON parsing failed on attempt {retries + 1} "
                                       f"of document_{doc[idx]['document_id']}: Json structure error.")
                         err_list.append(idx)
-                        retry_texts.append(texts[idx])
-                        retry_shot.append(few_shot[idx])
+                        retry_texts.append(texts[i])
+                        retry_shot.append(few_shot[i])
                         continue
                     msg_part.append({"document_id": doc[idx]['document_id'], "text": doc[idx]['text'], "analysis": msg})
                     result_part.append({"document_id": doc[idx]['document_id'], "text": doc[idx]['text'],
                                         "causality_list": result['causality_list']})
                 except ValueError as e:
                     err_list.append(idx)
-                    retry_texts.append(texts[idx])
-                    retry_shot.append(few_shot[idx])
+                    retry_texts.append(texts[i])
+                    retry_shot.append(few_shot[i])
                     logging.error(f"\nJSON parsing failed on attempt {retries + 1} "
                                   f"of document_{doc[idx]['document_id']}: {e}")
             if not err_list:
@@ -252,9 +259,9 @@ def generate(start_point=0, end_point=0, preprocess_mode=0, max_workers=10, infe
     :param recheck:
     :return:
     """
-    tokenizer, model, sampling_params = None, None, None
+    tokenizer, model = None, None
     if inference_mode != 0:
-        tokenizer, model, sampling_params = load_model(True if inference_mode == 2 else False)
+        tokenizer, model = load_model(True if inference_mode == 2 else False)
 
     with open(test_file, 'r', encoding='utf-8') as f_test:
         test_data = json.load(f_test)
@@ -306,7 +313,7 @@ def generate(start_point=0, end_point=0, preprocess_mode=0, max_workers=10, infe
                     future = executor.submit(
                         process_document,
                         doc, causality_data, retriever, preprocess_mode,
-                        inference_mode, tokenizer, model, sampling_params, max_workers
+                        inference_mode, tokenizer, model, max_workers
                     )
                     future_to_doc[future] = doc
 
@@ -331,7 +338,7 @@ def generate(start_point=0, end_point=0, preprocess_mode=0, max_workers=10, infe
                 docs = [doc for doc in docs if doc['document_id'] in miss_set]
             if len(docs) > 0:
                 msg_tmp, result_tmp = process_document(docs, causality_data, retriever, preprocess_mode,
-                                                       inference_mode, tokenizer, model, sampling_params, max_workers)
+                                                       inference_mode, tokenizer, model, max_workers)
                 msg_data.extend(msg_tmp)
                 result_data.extend(result_tmp)
 

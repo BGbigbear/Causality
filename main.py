@@ -1,4 +1,5 @@
 from inference.fast_inference import generate
+from util.data_expand import multi_test_data
 
 
 def run():
